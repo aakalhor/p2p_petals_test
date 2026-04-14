@@ -1,0 +1,274 @@
+{
+  "experiment": "E2: SIGKILL 4srv 60s",
+  "config": {
+    "fault_type": "SIGKILL",
+    "churn_interval": 60,
+    "num_servers": 4,
+    "duration": 300,
+    "layout": [
+      [
+        31337,
+        0,
+        8
+      ],
+      [
+        31338,
+        8,
+        16
+      ],
+      [
+        31339,
+        16,
+        24
+      ],
+      [
+        31340,
+        24,
+        32
+      ]
+    ]
+  },
+  "results": [
+    {
+      "request_id": 0,
+      "time": 10.716334350001489,
+      "latency_sec": 10.71605506600099,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 1,
+      "time": 12.990641842001423,
+      "latency_sec": 2.274018743999477,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 2,
+      "time": 15.359217117000298,
+      "latency_sec": 2.3682981050005765,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 3,
+      "time": 17.58614809000028,
+      "latency_sec": 2.226661957000033,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 4,
+      "time": 19.920616507000886,
+      "latency_sec": 2.333930459999465,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 5,
+      "time": 22.203473083000063,
+      "latency_sec": 2.2823801840004307,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 6,
+      "time": 24.318068163000135,
+      "latency_sec": 2.114128207000249,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 7,
+      "time": 26.431390524001472,
+      "latency_sec": 2.112875224000163,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 8,
+      "time": 28.541090422000707,
+      "latency_sec": 2.10923811900102,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 9,
+      "time": 30.563596203000998,
+      "latency_sec": 2.0220700229983777,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 10,
+      "time": 32.61643565200029,
+      "latency_sec": 2.0526274089988874,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 11,
+      "time": 34.85061343699999,
+      "latency_sec": 2.2338898010002595,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 12,
+      "time": 36.830037592000735,
+      "latency_sec": 1.979200977999426,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 13,
+      "time": 38.95737126600034,
+      "latency_sec": 2.127122104000591,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 14,
+      "time": 40.959553606000554,
+      "latency_sec": 2.0019700630000443,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 15,
+      "time": 43.11273504900055,
+      "latency_sec": 2.152931658001762,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 16,
+      "time": 45.26757271800125,
+      "latency_sec": 2.154603231998408,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 17,
+      "time": 47.363437792000695,
+      "latency_sec": 2.0956501430009666,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 18,
+      "time": 49.43873875100144,
+      "latency_sec": 2.07505679300084,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 19,
+      "time": 51.57596804400055,
+      "latency_sec": 2.136980760998995,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 20,
+      "time": 53.587288759999865,
+      "latency_sec": 2.011105468000096,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 21,
+      "time": 55.673367594999945,
+      "latency_sec": 2.0858519640005397,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 22,
+      "time": 57.78706644900012,
+      "latency_sec": 2.1134874559993477,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 23,
+      "time": 59.881709993000186,
+      "latency_sec": 2.094425744000546,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 24,
+      "time": 61.89559354100129,
+      "latency_sec": 2.0136664050005493,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 25,
+      "time": 92.01310181400004,
+      "latency_sec": 30.00039065099918,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 26,
+      "time": 122.01439614000083,
+      "latency_sec": 30.0004714530005,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 27,
+      "time": 152.12655176100088,
+      "latency_sec": 30.000369739000234,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 28,
+      "time": 192.13799687400024,
+      "latency_sec": 30.000263001998974,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 29,
+      "time": 232.2601358259999,
+      "latency_sec": 30.000416224998844,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 30,
+      "time": 272.2713789750014,
+      "latency_sec": 30.00012803199934,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 31,
+      "time": 312.28235969900015,
+      "latency_sec": 30.000361860998964,
+      "success": false,
+      "tokens_generated": 0
+    }
+  ],
+  "fault_events": [
+    {
+      "time": 61.89559542000097,
+      "type": "SIGKILL",
+      "port": 31339
+    },
+    {
+      "time": 122.01443088300039,
+      "type": "SIGKILL",
+      "port": 31340
+    },
+    {
+      "time": 202.1481663070008,
+      "type": "SIGKILL",
+      "port": 31338
+    }
+  ]
+}

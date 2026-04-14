@@ -1,0 +1,275 @@
+{
+  "experiment": "E7: SIGKILL 6srv repl 60s",
+  "config": {
+    "fault_type": "SIGKILL",
+    "churn_interval": 60,
+    "num_servers": 6,
+    "duration": 300,
+    "layout": [
+      [
+        31337,
+        0,
+        8
+      ],
+      [
+        31338,
+        0,
+        8
+      ],
+      [
+        31339,
+        8,
+        16
+      ],
+      [
+        31340,
+        8,
+        16
+      ],
+      [
+        31341,
+        16,
+        24
+      ],
+      [
+        31342,
+        24,
+        32
+      ]
+    ]
+  },
+  "results": [
+    {
+      "request_id": 0,
+      "time": 11.341801308997674,
+      "latency_sec": 11.341532944999926,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 1,
+      "time": 13.569049084999278,
+      "latency_sec": 2.2269916430013836,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 2,
+      "time": 15.921048250998865,
+      "latency_sec": 2.351741401998879,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 3,
+      "time": 18.242848895999487,
+      "latency_sec": 2.321486674998596,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 4,
+      "time": 20.486207407997426,
+      "latency_sec": 2.24311290499827,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 5,
+      "time": 22.830976762998034,
+      "latency_sec": 2.3445131499975105,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 6,
+      "time": 25.18958851399657,
+      "latency_sec": 2.3583652620000066,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 7,
+      "time": 27.549165792999702,
+      "latency_sec": 2.3591048549969855,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 8,
+      "time": 29.892123367997556,
+      "latency_sec": 2.3426685189988348,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 9,
+      "time": 32.177927286997146,
+      "latency_sec": 2.2853297399997246,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 10,
+      "time": 34.353936398998485,
+      "latency_sec": 2.1757975539985637,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 11,
+      "time": 36.65960351799731,
+      "latency_sec": 2.3054379529967264,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 12,
+      "time": 38.991045738999674,
+      "latency_sec": 2.331238029997621,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 13,
+      "time": 41.294254664997425,
+      "latency_sec": 2.3029869380006858,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 14,
+      "time": 43.46446274599657,
+      "latency_sec": 2.170000661000813,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 15,
+      "time": 45.73108273099933,
+      "latency_sec": 2.2664104329996917,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 16,
+      "time": 48.04479348699897,
+      "latency_sec": 2.3134732260004967,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 17,
+      "time": 50.33566886799963,
+      "latency_sec": 2.290637042999151,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 18,
+      "time": 52.5345148469969,
+      "latency_sec": 2.198649303998536,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 19,
+      "time": 54.91628471799777,
+      "latency_sec": 2.3815701400017133,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 20,
+      "time": 57.160637133998534,
+      "latency_sec": 2.2441328399982012,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 21,
+      "time": 59.47530577699945,
+      "latency_sec": 2.3144011289987247,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 22,
+      "time": 61.730226669998956,
+      "latency_sec": 2.2547106759993767,
+      "success": true,
+      "tokens_generated": 30
+    },
+    {
+      "request_id": 23,
+      "time": 91.8802991119992,
+      "latency_sec": 30.000308308000967,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 24,
+      "time": 121.88071365099677,
+      "latency_sec": 30.00010602600014,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 25,
+      "time": 152.0235316569997,
+      "latency_sec": 30.000224269999308,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 26,
+      "time": 192.03314168199722,
+      "latency_sec": 30.000129035997816,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 27,
+      "time": 232.18466973299655,
+      "latency_sec": 30.000129302999994,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 28,
+      "time": 272.19517526799973,
+      "latency_sec": 30.000140049000038,
+      "success": false,
+      "tokens_generated": 0
+    },
+    {
+      "request_id": 29,
+      "time": 312.34523566200005,
+      "latency_sec": 30.000098453001556,
+      "success": false,
+      "tokens_generated": 0
+    }
+  ],
+  "fault_events": [
+    {
+      "time": 61.73022869399938,
+      "type": "SIGKILL",
+      "port": 31339
+    },
+    {
+      "time": 121.88072355999975,
+      "type": "SIGKILL",
+      "port": 31341
+    },
+    {
+      "time": 202.04259734199877,
+      "type": "SIGKILL",
+      "port": 31338
+    },
+    {
+      "time": 282.20534607899754,
+      "type": "SIGKILL",
+      "port": 31340
+    }
+  ]
+}

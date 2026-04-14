@@ -1,0 +1,412 @@
+{
+  "experiment": "baseline",
+  "config": {
+    "model_name": "huggyllama/llama-7b",
+    "num_runs": 50,
+    "max_new_tokens": 30,
+    "num_servers": 4
+  },
+  "results": [
+    {
+      "run": 0,
+      "prompt": "The future of robotics is",
+      "elapsed_sec": 2.414824512999985,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.423262990125274,
+      "success": true
+    },
+    {
+      "run": 1,
+      "prompt": "In a distributed system, fault tolerance means",
+      "elapsed_sec": 2.6926788939999824,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.141321034174599,
+      "success": true
+    },
+    {
+      "run": 2,
+      "prompt": "Peer-to-peer networks differ from client-server because",
+      "elapsed_sec": 2.471204477000356,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.139829091122062,
+      "success": true
+    },
+    {
+      "run": 3,
+      "prompt": "Large language models require significant compute due to",
+      "elapsed_sec": 2.406958476,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.463862712686034,
+      "success": true
+    },
+    {
+      "run": 4,
+      "prompt": "The main challenge of edge inference is",
+      "elapsed_sec": 2.3984819739998784,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.507911389456838,
+      "success": true
+    },
+    {
+      "run": 5,
+      "prompt": "Autonomous vehicles rely on real-time inference because",
+      "elapsed_sec": 2.4795946600006573,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.098751656446964,
+      "success": true
+    },
+    {
+      "run": 6,
+      "prompt": "Federated learning improves privacy by",
+      "elapsed_sec": 2.5347415960004582,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.835525975246028,
+      "success": true
+    },
+    {
+      "run": 7,
+      "prompt": "The bottleneck in transformer inference is typically",
+      "elapsed_sec": 2.5225212829991506,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.892862986801648,
+      "success": true
+    },
+    {
+      "run": 8,
+      "prompt": "GPU memory is a constraint for large models because",
+      "elapsed_sec": 2.6252251419991808,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.427591302570788,
+      "success": true
+    },
+    {
+      "run": 9,
+      "prompt": "Swarm intelligence in multi-agent systems enables",
+      "elapsed_sec": 2.6313885759991535,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.400824748434893,
+      "success": true
+    },
+    {
+      "run": 10,
+      "prompt": "The future of robotics is",
+      "elapsed_sec": 2.403084002999094,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.483958098243521,
+      "success": true
+    },
+    {
+      "run": 11,
+      "prompt": "In a distributed system, fault tolerance means",
+      "elapsed_sec": 2.5226661519991467,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.892180016061891,
+      "success": true
+    },
+    {
+      "run": 12,
+      "prompt": "Peer-to-peer networks differ from client-server because",
+      "elapsed_sec": 2.4968363770003634,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.015204631086497,
+      "success": true
+    },
+    {
+      "run": 13,
+      "prompt": "Large language models require significant compute due to",
+      "elapsed_sec": 2.421095111001705,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.391086935691588,
+      "success": true
+    },
+    {
+      "run": 14,
+      "prompt": "The main challenge of edge inference is",
+      "elapsed_sec": 2.3467219689991907,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.78378964202314,
+      "success": true
+    },
+    {
+      "run": 15,
+      "prompt": "Autonomous vehicles rely on real-time inference because",
+      "elapsed_sec": 2.2176124480010913,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.528062591388032,
+      "success": true
+    },
+    {
+      "run": 16,
+      "prompt": "Federated learning improves privacy by",
+      "elapsed_sec": 2.1672770910008694,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.842254008298363,
+      "success": true
+    },
+    {
+      "run": 17,
+      "prompt": "The bottleneck in transformer inference is typically",
+      "elapsed_sec": 2.2147794230004365,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.545366950970669,
+      "success": true
+    },
+    {
+      "run": 18,
+      "prompt": "GPU memory is a constraint for large models because",
+      "elapsed_sec": 2.2250597809998,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.482783813799337,
+      "success": true
+    },
+    {
+      "run": 19,
+      "prompt": "Swarm intelligence in multi-agent systems enables",
+      "elapsed_sec": 2.2206513010005438,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.509550097524588,
+      "success": true
+    },
+    {
+      "run": 20,
+      "prompt": "The future of robotics is",
+      "elapsed_sec": 2.163983909998933,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.863319344188096,
+      "success": true
+    },
+    {
+      "run": 21,
+      "prompt": "In a distributed system, fault tolerance means",
+      "elapsed_sec": 2.3586613300012687,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.71907908880834,
+      "success": true
+    },
+    {
+      "run": 22,
+      "prompt": "Peer-to-peer networks differ from client-server because",
+      "elapsed_sec": 2.230350592999457,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.450800109257667,
+      "success": true
+    },
+    {
+      "run": 23,
+      "prompt": "Large language models require significant compute due to",
+      "elapsed_sec": 2.258900533999622,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.28079725001518,
+      "success": true
+    },
+    {
+      "run": 24,
+      "prompt": "The main challenge of edge inference is",
+      "elapsed_sec": 2.1722859330002393,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.810336633983393,
+      "success": true
+    },
+    {
+      "run": 25,
+      "prompt": "Autonomous vehicles rely on real-time inference because",
+      "elapsed_sec": 2.2500410989996453,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.333089788154457,
+      "success": true
+    },
+    {
+      "run": 26,
+      "prompt": "Federated learning improves privacy by",
+      "elapsed_sec": 2.2835626040014176,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.137367001645547,
+      "success": true
+    },
+    {
+      "run": 27,
+      "prompt": "The bottleneck in transformer inference is typically",
+      "elapsed_sec": 2.271332024998628,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.208108576736208,
+      "success": true
+    },
+    {
+      "run": 28,
+      "prompt": "GPU memory is a constraint for large models because",
+      "elapsed_sec": 2.281401212001583,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.149813299905961,
+      "success": true
+    },
+    {
+      "run": 29,
+      "prompt": "Swarm intelligence in multi-agent systems enables",
+      "elapsed_sec": 2.2615527309990284,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.265222423864362,
+      "success": true
+    },
+    {
+      "run": 30,
+      "prompt": "The future of robotics is",
+      "elapsed_sec": 2.156583904999934,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.910889314552739,
+      "success": true
+    },
+    {
+      "run": 31,
+      "prompt": "In a distributed system, fault tolerance means",
+      "elapsed_sec": 2.2297654680005508,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.454329807565479,
+      "success": true
+    },
+    {
+      "run": 32,
+      "prompt": "Peer-to-peer networks differ from client-server because",
+      "elapsed_sec": 2.259721589000037,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.2759717595456,
+      "success": true
+    },
+    {
+      "run": 33,
+      "prompt": "Large language models require significant compute due to",
+      "elapsed_sec": 2.1684229220009,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.834939529378184,
+      "success": true
+    },
+    {
+      "run": 34,
+      "prompt": "The main challenge of edge inference is",
+      "elapsed_sec": 2.259142086000793,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.279377240546644,
+      "success": true
+    },
+    {
+      "run": 35,
+      "prompt": "Autonomous vehicles rely on real-time inference because",
+      "elapsed_sec": 2.303643381999791,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.022849037491655,
+      "success": true
+    },
+    {
+      "run": 36,
+      "prompt": "Federated learning improves privacy by",
+      "elapsed_sec": 2.2223427059998357,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.499268100732893,
+      "success": true
+    },
+    {
+      "run": 37,
+      "prompt": "The bottleneck in transformer inference is typically",
+      "elapsed_sec": 2.2887875180003903,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.107376619306994,
+      "success": true
+    },
+    {
+      "run": 38,
+      "prompt": "GPU memory is a constraint for large models because",
+      "elapsed_sec": 2.1814287699999113,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.752454543817729,
+      "success": true
+    },
+    {
+      "run": 39,
+      "prompt": "Swarm intelligence in multi-agent systems enables",
+      "elapsed_sec": 2.311883406000561,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.976432947325165,
+      "success": true
+    },
+    {
+      "run": 40,
+      "prompt": "The future of robotics is",
+      "elapsed_sec": 2.3532248600004095,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.748462975184946,
+      "success": true
+    },
+    {
+      "run": 41,
+      "prompt": "In a distributed system, fault tolerance means",
+      "elapsed_sec": 2.415106537000611,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.421812263925155,
+      "success": true
+    },
+    {
+      "run": 42,
+      "prompt": "Peer-to-peer networks differ from client-server because",
+      "elapsed_sec": 2.391219340999669,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.545900531006183,
+      "success": true
+    },
+    {
+      "run": 43,
+      "prompt": "Large language models require significant compute due to",
+      "elapsed_sec": 2.3449128350002866,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.79365251970926,
+      "success": true
+    },
+    {
+      "run": 44,
+      "prompt": "The main challenge of edge inference is",
+      "elapsed_sec": 2.2803041850002046,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.156139517411493,
+      "success": true
+    },
+    {
+      "run": 45,
+      "prompt": "Autonomous vehicles rely on real-time inference because",
+      "elapsed_sec": 2.284570193998661,
+      "tokens_generated": 30,
+      "tokens_per_sec": 13.131572879138062,
+      "success": true
+    },
+    {
+      "run": 46,
+      "prompt": "Federated learning improves privacy by",
+      "elapsed_sec": 2.535720111998671,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.830958731621923,
+      "success": true
+    },
+    {
+      "run": 47,
+      "prompt": "The bottleneck in transformer inference is typically",
+      "elapsed_sec": 2.348989616999461,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.771448533825888,
+      "success": true
+    },
+    {
+      "run": 48,
+      "prompt": "GPU memory is a constraint for large models because",
+      "elapsed_sec": 2.5034526890012785,
+      "tokens_generated": 30,
+      "tokens_per_sec": 11.98344994966457,
+      "success": true
+    },
+    {
+      "run": 49,
+      "prompt": "Swarm intelligence in multi-agent systems enables",
+      "elapsed_sec": 2.3995547810009157,
+      "tokens_generated": 30,
+      "tokens_per_sec": 12.502319279198215,
+      "success": true
+    }
+  ],
+  "fault_events": []
+}
