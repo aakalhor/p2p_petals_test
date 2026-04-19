@@ -13,7 +13,6 @@ Runs the full set of experiments from the instruction:
   - E7: SIGKILL, 6 servers (2x replication), 1 per 60s
 
 Usage:
-    conda activate petals
     python run_experiments.py [--experiments all|baseline|E1|E2|...]
 """
 
@@ -24,6 +23,10 @@ import sys
 import time
 
 import numpy as np
+from runtime_env import configure_runtime_env
+
+configure_runtime_env()
+
 from transformers import AutoTokenizer
 from petals import AutoDistributedModelForCausalLM
 
@@ -35,6 +38,7 @@ MODEL_NAME = "huggyllama/llama-7b"
 RESULTS_DIR = "results"
 EXPERIMENT_DURATION = 300  # 5 minutes per experiment
 MAX_NEW_TOKENS = 30
+LOCAL_BIND_HOST = "127.0.0.1"
 
 
 # Experiment definitions
@@ -106,7 +110,7 @@ EXPERIMENTS = {
 }
 
 
-def launch_swarm(manager, num_servers, replicated=False, startup_wait=60):
+def launch_swarm(manager, num_servers, replicated=False, startup_timeout=180):
     """
     Launch a Petals swarm.
 
@@ -118,8 +122,8 @@ def launch_swarm(manager, num_servers, replicated=False, startup_wait=60):
     port1 = manager.base_port
     print(f"  Starting bootstrap server on port {port1} (blocks 0:8)...")
     manager.start_server(port1, 0, 8, is_bootstrap=True)
-    manager.wait_for_bootstrap(port1, timeout=300)
-    time.sleep(startup_wait)
+    manager.wait_for_bootstrap(port1, timeout=startup_timeout)
+    manager.wait_for_server_start(port1, timeout=startup_timeout)
 
     if num_servers == 4 and not replicated:
         # Standard 4-server layout
@@ -129,7 +133,7 @@ def launch_swarm(manager, num_servers, replicated=False, startup_wait=60):
             block_end = block_start + 8
             print(f"  Starting server on port {port} (blocks {block_start}:{block_end})...")
             manager.start_server(port, block_start, block_end)
-            time.sleep(startup_wait)
+            manager.wait_for_server_start(port, timeout=startup_timeout)
 
     elif num_servers == 6 and not replicated:
         # 6 servers, ~5-6 blocks each
@@ -140,7 +144,7 @@ def launch_swarm(manager, num_servers, replicated=False, startup_wait=60):
             bs, be = block_ranges[i]
             print(f"  Starting server on port {port} (blocks {bs}:{be})...")
             manager.start_server(port, bs, be)
-            time.sleep(startup_wait)
+            manager.wait_for_server_start(port, timeout=startup_timeout)
 
     elif num_servers == 6 and replicated:
         # 4 primary servers (standard) + 2 replicas
@@ -152,7 +156,7 @@ def launch_swarm(manager, num_servers, replicated=False, startup_wait=60):
             block_end = block_start + 8
             print(f"  Starting primary server on port {port} (blocks {block_start}:{block_end})...")
             manager.start_server(port, block_start, block_end)
-            time.sleep(startup_wait)
+            manager.wait_for_server_start(port, timeout=startup_timeout)
 
         # Replicas
         for i in range(2):
@@ -161,7 +165,7 @@ def launch_swarm(manager, num_servers, replicated=False, startup_wait=60):
             block_end = block_start + 8
             print(f"  Starting REPLICA server on port {port} (blocks {block_start}:{block_end})...")
             manager.start_server(port, block_start, block_end)
-            time.sleep(startup_wait)
+            manager.wait_for_server_start(port, timeout=startup_timeout)
 
     manager.status()
 
@@ -172,7 +176,7 @@ def run_single_experiment(exp_name, exp_config):
     print(f"  EXPERIMENT: {exp_config['label']}")
     print(f"{'='*60}\n")
 
-    manager = SwarmManager(MODEL_NAME)
+    manager = SwarmManager(MODEL_NAME, bind_host=LOCAL_BIND_HOST, announce_host=LOCAL_BIND_HOST)
 
     try:
         # Launch the swarm
@@ -181,7 +185,7 @@ def run_single_experiment(exp_name, exp_config):
             manager,
             exp_config["num_servers"],
             replicated=exp_config["replicated"],
-            startup_wait=60,
+            startup_timeout=180,
         )
 
         # Connect client

@@ -7,8 +7,7 @@ Each request has a 30s timeout to prevent hanging on dead nodes.
 Supports 4-server and 6-server (with replication) configurations.
 
 Usage:
-    HF_HUB_DISABLE_XET=1 PYTHONUNBUFFERED=1 \
-        /home/gellert/miniforge3/envs/petals/bin/python run_fault_experiments.py
+    HF_HUB_DISABLE_XET=1 PYTHONUNBUFFERED=1 python run_fault_experiments.py
 """
 
 import json
@@ -24,16 +23,21 @@ import traceback
 
 import numpy as np
 import torch
+from runtime_env import configure_runtime_env
+
+configure_runtime_env()
+
 from transformers import AutoTokenizer
 from petals import AutoDistributedModelForCausalLM
 
 # ---- Configuration ----
-PYTHON = "/home/gellert/miniforge3/envs/petals/bin/python"
+PYTHON = os.environ.get("PETALS_PYTHON", sys.executable)
 MODEL_NAME = "huggyllama/llama-7b"
 RESULTS_DIR = "results"
 MAX_NEW_TOKENS = 30
 EXPERIMENT_DURATION = 300   # 5 minutes per experiment
 REQUEST_TIMEOUT = 30        # 30s per-request timeout (kills hung retries)
+LOCAL_BIND_HOST = os.environ.get("PETALS_BIND_HOST", "127.0.0.1")
 
 PROMPTS = [
     "The future of robotics is",
@@ -94,8 +98,9 @@ def start_server(port, block_start, block_end, initial_peer, is_bootstrap=False)
         PYTHON, "-m", "petals.cli.run_server",
         MODEL_NAME,
         "--block_indices", f"{block_start}:{block_end}",
-        "--port", str(port),
         "--torch_dtype", "float16",
+        "--host_maddrs", f"/ip4/{LOCAL_BIND_HOST}/tcp/{port}",
+        "--announce_maddrs", f"/ip4/{LOCAL_BIND_HOST}/tcp/{port}",
     ]
     if is_bootstrap:
         cmd.append("--new_swarm")
@@ -190,11 +195,11 @@ def launch_swarm(layout, config):
     with open(f"server_{bootstrap_port}.log") as f:
         content = f.read()
     match = re.search(
-        rf"/ip4/127\.0\.0\.1/tcp/{bootstrap_port}/p2p/(12D3[A-Za-z0-9]+)",
+        rf"/ip4/{re.escape(LOCAL_BIND_HOST)}\/tcp/{bootstrap_port}/p2p/(12D3[A-Za-z0-9]+)",
         content
     )
     if match:
-        peer = f"/ip4/127.0.0.1/tcp/{bootstrap_port}/p2p/{match.group(1)}"
+        peer = f"/ip4/{LOCAL_BIND_HOST}/tcp/{bootstrap_port}/p2p/{match.group(1)}"
         config["initial_peer"] = peer
         print(f"  Bootstrap peer: {peer}")
     else:

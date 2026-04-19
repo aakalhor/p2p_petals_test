@@ -6,7 +6,6 @@ Run N=50+ inference requests and collect per-token latency,
 end-to-end generation time, and throughput (tokens/sec).
 
 Usage:
-    conda activate petals
     python run_baseline.py [--num_runs 50] [--max_tokens 30]
 """
 
@@ -17,6 +16,10 @@ import sys
 import time
 
 import numpy as np
+from runtime_env import configure_runtime_env
+
+configure_runtime_env()
+
 from transformers import AutoTokenizer
 from petals import AutoDistributedModelForCausalLM
 
@@ -119,10 +122,10 @@ def main():
         sys.exit(1)
 
     model_name = config["model_name"]
-    initial_peer = config["initial_peer"]
+    initial_peers = config.get("initial_peers") or [config["initial_peer"]]
 
     print(f"Model: {model_name}")
-    print(f"Initial peer: {initial_peer}")
+    print(f"Initial peer: {initial_peers[0]}")
     print(f"Runs: {args.num_runs}, Max tokens: {args.max_tokens}")
 
     print("\nLoading tokenizer...")
@@ -131,7 +134,7 @@ def main():
     print("Connecting to swarm...")
     model = AutoDistributedModelForCausalLM.from_pretrained(
         model_name,
-        initial_peers=[initial_peer],
+        initial_peers=initial_peers,
     )
 
     print(f"\nRunning {args.num_runs} baseline inference requests...\n")

@@ -1,3 +1,5 @@
 .vscode
 *.log
 *.txt
+__pycache__/
+swarm_config.json

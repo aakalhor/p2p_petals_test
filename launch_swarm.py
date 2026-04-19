@@ -1,92 +1,141 @@
 #!/usr/bin/env python3
 """
-Launch a private Petals swarm with 4 servers on localhost.
-
-Each server handles 8 of the 32 transformer blocks of Llama-2-7b-hf.
-After all servers are running, saves the swarm config for other scripts.
+Launch a private local Petals swarm for llama-7b on one machine.
 
 Usage:
-    conda activate petals
     python launch_swarm.py
+    python launch_swarm.py --profile compact
 """
 
+import argparse
 import json
-import time
 import sys
+import time
+
 from swarm_manager import SwarmManager
+
 
 MODEL_NAME = "huggyllama/llama-7b"
 BASE_PORT = 31337
-BLOCKS_PER_SERVER = 8
-TOTAL_BLOCKS = 32
-NUM_SERVERS = TOTAL_BLOCKS // BLOCKS_PER_SERVER  # 4
-STARTUP_WAIT_PER_SERVER = 60  # seconds to wait for each non-bootstrap server
+SERVER_START_TIMEOUT = 180
+DEFAULT_SERVER_ARGS = [
+    "--num_handlers",
+    "1",
+    "--prefetch_batches",
+    "1",
+    "--sender_threads",
+    "1",
+    "--attn_cache_tokens",
+    "4096",
+    "--balance_quality",
+    "0.0",
+]
+
+SWARM_PROFILES = {
+    "presentation": {
+        "description": "4 local peers, 8 blocks each",
+        "block_ranges": [(0, 8), (8, 16), (16, 24), (24, 32)],
+    },
+    "compact": {
+        "description": "2 local peers, lower process overhead",
+        "block_ranges": [(0, 16), (16, 32)],
+    },
+}
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Launch a private local Petals swarm")
+    parser.add_argument("--profile", choices=sorted(SWARM_PROFILES), default="presentation")
+    parser.add_argument("--model", default=MODEL_NAME)
+    parser.add_argument("--base-port", type=int, default=BASE_PORT)
+    parser.add_argument("--bind-host", default="127.0.0.1", help="Host used for listen multiaddrs")
+    parser.add_argument("--announce-host", help="Host advertised to clients and peers; defaults to --bind-host")
+    parser.add_argument("--startup-timeout", type=int, default=SERVER_START_TIMEOUT)
+    parser.add_argument(
+        "--server-arg",
+        action="append",
+        default=[],
+        help="Extra argument to pass through to petals.cli.run_server. Repeat for multiple values.",
+    )
+    return parser.parse_args()
 
 
 def main():
+    args = parse_args()
+    profile = SWARM_PROFILES[args.profile]
+    block_ranges = profile["block_ranges"]
+    num_servers = len(block_ranges)
+    announce_host = args.announce_host or args.bind_host
+    exit_code = 0
+
     print("=" * 60)
-    print("  P2P Inference — Launching Private Swarm")
-    print(f"  Model: {MODEL_NAME}")
-    print(f"  Servers: {NUM_SERVERS} (blocks per server: {BLOCKS_PER_SERVER})")
+    print("  P2P Inference - Launching Private Swarm")
+    print(f"  Model: {args.model}")
+    print(f"  Profile: {args.profile} ({profile['description']})")
+    print(f"  Host: {args.bind_host}")
+    print(f"  Announce host: {announce_host}")
+    print(f"  Servers: {num_servers}")
+    print(f"  Server args: {' '.join(DEFAULT_SERVER_ARGS + args.server_arg)}")
     print("=" * 60)
 
-    manager = SwarmManager(MODEL_NAME, base_port=BASE_PORT)
+    manager = SwarmManager(
+        args.model,
+        base_port=args.base_port,
+        bind_host=args.bind_host,
+        announce_host=announce_host,
+        extra_server_args=DEFAULT_SERVER_ARGS + args.server_arg,
+    )
 
-    # --- Server 1: Bootstrap (blocks 0-7) ---
-    port1 = BASE_PORT
-    print(f"\n[1/{NUM_SERVERS}] Starting bootstrap server on port {port1} (blocks 0:{BLOCKS_PER_SERVER})...")
-    manager.start_server(port1, 0, BLOCKS_PER_SERVER, is_bootstrap=True)
-
-    # Wait for the bootstrap node to announce its peer ID
     try:
-        peer_addr = manager.wait_for_bootstrap(port1, timeout=300)
-    except TimeoutError as e:
-        print(f"\nERROR: {e}")
-        print("Check server logs: server_{port1}.log")
-        manager.shutdown_all()
-        sys.exit(1)
+        bootstrap_port = args.base_port
+        bootstrap_start, bootstrap_end = block_ranges[0]
+        print(
+            f"\n[1/{num_servers}] Starting bootstrap server on port {bootstrap_port} "
+            f"(blocks {bootstrap_start}:{bootstrap_end})..."
+        )
+        manager.start_server(bootstrap_port, bootstrap_start, bootstrap_end, is_bootstrap=True)
+        peer_addr = manager.wait_for_bootstrap(bootstrap_port, timeout=args.startup_timeout)
+        manager.wait_for_server_start(bootstrap_port, timeout=args.startup_timeout)
 
-    # --- Servers 2-4 ---
-    for i in range(1, NUM_SERVERS):
-        port = BASE_PORT + i
-        block_start = i * BLOCKS_PER_SERVER
-        block_end = block_start + BLOCKS_PER_SERVER
-        print(f"\n[{i+1}/{NUM_SERVERS}] Starting server on port {port} (blocks {block_start}:{block_end})...")
-        manager.start_server(port, block_start, block_end, is_bootstrap=False)
-        print(f"  Waiting {STARTUP_WAIT_PER_SERVER}s for server to load model blocks...")
-        time.sleep(STARTUP_WAIT_PER_SERVER)
+        for index, (block_start, block_end) in enumerate(block_ranges[1:], start=1):
+            port = args.base_port + index
+            print(
+                f"\n[{index + 1}/{num_servers}] Starting server on port {port} "
+                f"(blocks {block_start}:{block_end})..."
+            )
+            manager.start_server(port, block_start, block_end, is_bootstrap=False)
+            manager.wait_for_server_start(port, timeout=args.startup_timeout)
 
-    # Check all servers alive
-    manager.status()
+        manager.status()
+        alive = manager.get_alive_ports()
+        if len(alive) < num_servers:
+            dead = manager.get_dead_ports()
+            print(f"WARNING: {len(dead)} server(s) died during startup. Ports: {dead}")
+            print("Check logs: server_<port>.log")
+        else:
+            print("All servers are running.")
 
-    alive = manager.get_alive_ports()
-    if len(alive) < NUM_SERVERS:
-        dead = manager.get_dead_ports()
-        print(f"WARNING: {len(dead)} server(s) died during startup. Ports: {dead}")
-        print("Check logs: server_<port>.log")
-    else:
-        print("All servers are running!")
+        config = {
+            "model_name": args.model,
+            "initial_peer": peer_addr,
+            "initial_peers": [peer_addr],
+            "base_port": args.base_port,
+            "bind_host": args.bind_host,
+            "announce_host": announce_host,
+            "profile": args.profile,
+            "num_servers": num_servers,
+            "block_ranges": block_ranges,
+            "server_ports": [args.base_port + i for i in range(num_servers)],
+            "server_args": DEFAULT_SERVER_ARGS + args.server_arg,
+        }
+        with open("swarm_config.json", "w") as handle:
+            json.dump(config, handle, indent=2)
 
-    # Save swarm config for other scripts
-    config = {
-        "model_name": MODEL_NAME,
-        "initial_peer": peer_addr,
-        "base_port": BASE_PORT,
-        "num_servers": NUM_SERVERS,
-        "blocks_per_server": BLOCKS_PER_SERVER,
-        "server_ports": [BASE_PORT + i for i in range(NUM_SERVERS)],
-    }
-    with open("swarm_config.json", "w") as f:
-        json.dump(config, f, indent=2)
-    print(f"\nSwarm config saved to swarm_config.json")
-    print("\nSwarm is ready! You can now run:")
-    print("  python test_client.py          # Quick smoke test")
-    print("  python run_baseline.py         # Baseline measurements")
-    print("  python run_experiments.py      # Full experiment matrix")
+        print("\nSwarm config saved to swarm_config.json")
+        print("\nSwarm is ready. Smoke test:")
+        print("  python test_client.py")
+        print("\nPress Ctrl+C to shut down the swarm.")
 
-    # Keep running — servers are background processes
-    print("\nPress Ctrl+C to shut down the swarm.")
-    try:
         while True:
             time.sleep(10)
             dead = manager.get_dead_ports()
@@ -94,7 +143,13 @@ def main():
                 print(f"WARNING: Server(s) on ports {dead} have died.")
     except KeyboardInterrupt:
         print("\nShutting down swarm...")
+    except Exception as exc:
+        print(f"\nERROR: {exc}")
+        print("Check server_<port>.log for details.")
+        exit_code = 1
+    finally:
         manager.shutdown_all()
+    raise SystemExit(exit_code)
 
 
 if __name__ == "__main__":

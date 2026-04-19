@@ -1,96 +1,211 @@
 """
-SwarmManager: Manages Petals server processes for fault injection experiments.
-
-Handles launching, killing, partitioning, and adding latency to Petals servers.
+SwarmManager: Manages local Petals server processes for smoke tests and experiments.
 """
 
-import subprocess
-import signal
-import time
 import os
 import re
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
 
 
 class SwarmManager:
-    """Manages Petals server processes for fault injection experiments."""
+    """Manages Petals server processes for local swarm experiments."""
 
-    def __init__(self, model_name, base_port=31337, torch_dtype="float16"):
+    def __init__(
+        self,
+        model_name,
+        base_port=31337,
+        torch_dtype="float16",
+        python_executable=None,
+        bind_host="127.0.0.1",
+        announce_host=None,
+        log_dir=".",
+        extra_server_args=None,
+    ):
         self.model_name = model_name
         self.base_port = base_port
         self.torch_dtype = torch_dtype
-        self.servers = {}  # port -> {"process": Popen, "blocks": (start, end), "is_bootstrap": bool}
-        self.initial_peer = None  # Set after bootstrap server starts
+        self.python_executable = python_executable or sys.executable
+        self.bind_host = bind_host
+        self.announce_host = announce_host or bind_host
+        self.log_dir = Path(log_dir)
+        self.extra_server_args = list(extra_server_args or [])
+        self.servers = {}
+        self.initial_peer = None
 
-    def start_server(self, port, block_start, block_end, is_bootstrap=False):
-        """Start a Petals server process serving the given block range."""
+    def _log_path(self, port):
+        return self.log_dir / f"server_{port}.log"
+
+    def _server_multiaddr(self, port, host=None):
+        host = host or self.announce_host
+        return f"/ip4/{host}/tcp/{port}"
+
+    def _build_command(self, port, block_start, block_end, is_bootstrap):
         cmd = [
-            "python", "-m", "petals.cli.run_server",
+            self.python_executable,
+            "-m",
+            "petals.cli.run_server",
             self.model_name,
-            "--num_blocks", str(block_end - block_start),
-            "--block_indices", f"{block_start}:{block_end}",
-            "--port", str(port),
-            "--torch_dtype", self.torch_dtype,
+            "--block_indices",
+            f"{block_start}:{block_end}",
+            "--torch_dtype",
+            self.torch_dtype,
         ]
+
+        if self.bind_host:
+            cmd.extend(["--host_maddrs", self._server_multiaddr(port, self.bind_host)])
+            cmd.extend(["--announce_maddrs", self._server_multiaddr(port, self.announce_host)])
+        else:
+            cmd.extend(["--port", str(port)])
+
         if is_bootstrap:
             cmd.append("--new_swarm")
         else:
             if self.initial_peer is None:
-                raise RuntimeError("Bootstrap server not started yet — no initial_peer available.")
+                raise RuntimeError("Bootstrap server not started yet - no initial_peer available.")
             cmd.extend(["--initial_peers", self.initial_peer])
 
-        log_file = open(f"server_{port}.log", "w")
-        proc = subprocess.Popen(
-            cmd,
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
-            preexec_fn=os.setsid,  # Create new process group for clean kills
-        )
+        cmd.extend(self.extra_server_args)
+        return cmd
+
+    def _spawn(self, cmd, log_file):
+        kwargs = {
+            "stdout": log_file,
+            "stderr": subprocess.STDOUT,
+            "env": {
+                **os.environ,
+                "PYTHONUNBUFFERED": "1",
+                "HF_HUB_DISABLE_XET": os.environ.get("HF_HUB_DISABLE_XET", "1"),
+                "TMPDIR": os.environ.get("TMPDIR", "/tmp"),
+                "TMP": os.environ.get("TMP", os.environ.get("TMPDIR", "/tmp")),
+                "TEMP": os.environ.get("TEMP", os.environ.get("TMPDIR", "/tmp")),
+                "HF_HOME": os.environ.get("HF_HOME", str(Path.home() / ".cache" / "huggingface")),
+                "HUGGINGFACE_HUB_CACHE": os.environ.get(
+                    "HUGGINGFACE_HUB_CACHE",
+                    str(Path.home() / ".cache" / "huggingface" / "hub"),
+                ),
+            },
+        }
+        if os.name == "nt":
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        else:
+            kwargs["start_new_session"] = True
+        return subprocess.Popen(cmd, **kwargs)
+
+    def _signal_process(self, proc, sig):
+        if proc.poll() is not None:
+            return
+
+        if os.name == "nt":
+            if sig == signal.SIGKILL:
+                proc.kill()
+            else:
+                proc.send_signal(sig)
+            return
+
+        try:
+            os.killpg(os.getpgid(proc.pid), sig)
+        except ProcessLookupError:
+            pass
+
+    def start_server(self, port, block_start, block_end, is_bootstrap=False):
+        """Start a Petals server process serving the given block range."""
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = self._log_path(port)
+        log_file = open(log_path, "w")
+        cmd = self._build_command(port, block_start, block_end, is_bootstrap)
+        proc = self._spawn(cmd, log_file)
         self.servers[port] = {
             "process": proc,
             "blocks": (block_start, block_end),
             "is_bootstrap": is_bootstrap,
             "log_file": log_file,
+            "log_path": log_path,
         }
         print(f"[SwarmManager] Started server on port {port} serving blocks {block_start}:{block_end} (PID: {proc.pid})")
         return proc
 
+    def _read_log(self, port):
+        info = self.servers.get(port)
+        log_path = info["log_path"] if info else self._log_path(port)
+        try:
+            return log_path.read_text(errors="ignore")
+        except FileNotFoundError:
+            return ""
+
+    def _extract_multiaddrs(self, content, port=None):
+        matches = re.findall(r"(/ip4/[0-9.]+/tcp/\d+/p2p/[A-Za-z0-9]+)", content)
+        if port is None:
+            return matches
+        expected = f"/tcp/{port}/p2p/"
+        return [match for match in matches if expected in match]
+
     def wait_for_bootstrap(self, port, timeout=300):
-        """
-        Wait for the bootstrap server to print its multiaddress, then extract and store it.
-        Reads from the server log file.
-        """
-        log_path = f"server_{port}.log"
+        """Wait for the bootstrap server to announce a usable peer multiaddr."""
         start = time.time()
         print(f"[SwarmManager] Waiting for bootstrap server on port {port} to announce peer ID...")
 
         while time.time() - start < timeout:
-            try:
-                with open(log_path, "r") as f:
-                    content = f.read()
-                # Look for multiaddress pattern: /ip4/.../tcp/.../p2p/...
-                match = re.search(r"(/ip4/[\d.]+/tcp/\d+/p2p/\S+)", content)
-                if match:
-                    self.initial_peer = match.group(1)
-                    print(f"[SwarmManager] Bootstrap peer address: {self.initial_peer}")
-                    return self.initial_peer
-                # Also check for "running" or ready indicators
-                if "ready" in content.lower() or "running" in content.lower():
-                    # Try to find peer ID another way
-                    match2 = re.search(r"(Qm\S+|12D3\S+)", content)
-                    if match2:
-                        peer_id = match2.group(1)
-                        self.initial_peer = f"/ip4/127.0.0.1/tcp/{port}/p2p/{peer_id}"
-                        print(f"[SwarmManager] Bootstrap peer address (constructed): {self.initial_peer}")
-                        return self.initial_peer
-            except FileNotFoundError:
-                pass
-            time.sleep(2)
+            info = self.servers.get(port)
+            if info and info["process"].poll() is not None:
+                raise RuntimeError(
+                    f"Bootstrap server on port {port} exited early with code {info['process'].returncode}. "
+                    f"Check {info['log_path']}."
+                )
 
-        raise TimeoutError(f"Bootstrap server on port {port} did not announce peer ID within {timeout}s. "
-                           f"Check server_{port}.log for errors.")
+            content = self._read_log(port)
+            maddrs = self._extract_multiaddrs(content, port=port)
+            if maddrs:
+                preferred_prefix = self._server_multiaddr(port, self.announce_host) + "/p2p/"
+                for addr in maddrs:
+                    if addr.startswith(preferred_prefix):
+                        self.initial_peer = addr
+                        print(f"[SwarmManager] Bootstrap peer address: {self.initial_peer}")
+                        return self.initial_peer
+                self.initial_peer = maddrs[0]
+                print(f"[SwarmManager] Bootstrap peer address: {self.initial_peer}")
+                return self.initial_peer
+
+            peer_match = re.search(r"(Qm[1-9A-HJ-NP-Za-km-z]+|12D3Koo[A-Za-z0-9]+)", content)
+            if peer_match and ("Running a server on" in content or "Announced that blocks" in content):
+                self.initial_peer = f"{self._server_multiaddr(port, self.announce_host)}/p2p/{peer_match.group(1)}"
+                print(f"[SwarmManager] Bootstrap peer address (constructed): {self.initial_peer}")
+                return self.initial_peer
+
+            time.sleep(1)
+
+        raise TimeoutError(
+            f"Bootstrap server on port {port} did not announce peer ID within {timeout}s. "
+            f"Check {self._log_path(port)} for errors."
+        )
+
+    def wait_for_server_start(self, port, timeout=180):
+        """Wait until a server finishes startup and is ready for inference."""
+        start = time.time()
+        print(f"[SwarmManager] Waiting for server on port {port} to finish startup...")
+
+        while time.time() - start < timeout:
+            info = self.servers.get(port)
+            if info is None:
+                raise ValueError(f"No record of server on port {port}")
+
+            proc = info["process"]
+            content = self._read_log(port)
+            if "Started" in content:
+                return True
+            if proc.poll() is not None:
+                raise RuntimeError(
+                    f"Server on port {port} exited with code {proc.returncode}. Check {info['log_path']}."
+                )
+            time.sleep(1)
+
+        raise TimeoutError(f"Server on port {port} did not finish startup within {timeout}s.")
 
     def kill_server(self, port, method="SIGKILL"):
-        """Kill a server process. method: SIGTERM, SIGKILL"""
+        """Kill a server process. method: SIGTERM, SIGKILL."""
         if port not in self.servers:
             print(f"[SwarmManager] No server on port {port}")
             return
@@ -99,9 +214,9 @@ class SwarmManager:
             print(f"[SwarmManager] Server on port {port} already dead")
             return
         if method == "SIGTERM":
-            proc.send_signal(signal.SIGTERM)
+            self._signal_process(proc, signal.SIGTERM)
         elif method == "SIGKILL":
-            proc.kill()
+            self._signal_process(proc, signal.SIGKILL)
         else:
             raise ValueError(f"Unknown kill method: {method}")
         print(f"[SwarmManager] Killed server on port {port} with {method} (PID: {proc.pid})")
@@ -134,10 +249,9 @@ class SwarmManager:
             raise ValueError(f"No record of server on port {port}")
         info = self.servers[port]
         block_start, block_end = info["blocks"]
-        # Close old log file
-        if "log_file" in info and info["log_file"]:
+        if info["log_file"]:
             info["log_file"].close()
-        self.start_server(port, block_start, block_end, is_bootstrap=False)
+        self.start_server(port, block_start, block_end, is_bootstrap=info.get("is_bootstrap", False))
 
     def get_alive_ports(self):
         """Return list of ports whose server processes are still running."""
@@ -153,18 +267,16 @@ class SwarmManager:
         for port, info in self.servers.items():
             proc = info["process"]
             if proc.poll() is None:
-                proc.send_signal(signal.SIGTERM)
+                self._signal_process(proc, signal.SIGTERM)
                 print(f"  Sent SIGTERM to server on port {port} (PID: {proc.pid})")
-        # Wait for graceful shutdown
         time.sleep(5)
         for port, info in self.servers.items():
             proc = info["process"]
             if proc.poll() is None:
-                proc.kill()
+                self._signal_process(proc, signal.SIGKILL)
                 print(f"  Force-killed server on port {port} (PID: {proc.pid})")
-            if "log_file" in info and info["log_file"]:
+            if info.get("log_file"):
                 info["log_file"].close()
-        # Clean up any iptables rules and netem
         self.remove_latency()
         print("[SwarmManager] All servers shut down.")
 
@@ -177,6 +289,6 @@ class SwarmManager:
             blocks = info["blocks"]
             status_str = "ALIVE" if alive else f"DEAD (exit code: {proc.returncode})"
             bootstrap_str = " [BOOTSTRAP]" if info.get("is_bootstrap") else ""
-            print(f"  Port {port}: blocks {blocks[0]}:{blocks[1]} — {status_str}{bootstrap_str}")
+            print(f"  Port {port}: blocks {blocks[0]}:{blocks[1]} - {status_str}{bootstrap_str}")
         print(f"  Initial peer: {self.initial_peer}")
         print("====================\n")
