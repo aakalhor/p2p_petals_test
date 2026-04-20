@@ -23,6 +23,8 @@ configure_runtime_env()
 from transformers import AutoTokenizer
 from petals import AutoDistributedModelForCausalLM
 
+from model_presets import safe_model_tag
+
 
 PROMPTS = [
     "The future of robotics is",
@@ -110,7 +112,7 @@ def main():
     parser = argparse.ArgumentParser(description="Baseline inference measurements")
     parser.add_argument("--num_runs", type=int, default=50, help="Number of inference runs")
     parser.add_argument("--max_tokens", type=int, default=30, help="Max new tokens per run")
-    parser.add_argument("--output", type=str, default="results/baseline_4srv.json", help="Output file path")
+    parser.add_argument("--output", type=str, help="Output file path")
     args = parser.parse_args()
 
     # Load swarm config
@@ -123,6 +125,8 @@ def main():
 
     model_name = config["model_name"]
     initial_peers = config.get("initial_peers") or [config["initial_peer"]]
+    model_tag = safe_model_tag(model_name)
+    output_path = args.output or f"results/baseline_{config['profile']}_{model_tag}.json"
 
     print(f"Model: {model_name}")
     print(f"Initial peer: {initial_peers[0]}")
@@ -141,21 +145,23 @@ def main():
     results = run_baseline(model, tokenizer, args.num_runs, args.max_tokens)
 
     # Save results
-    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     output_data = {
         "experiment": "baseline",
         "config": {
+            "preset": config.get("preset"),
             "model_name": model_name,
             "num_runs": args.num_runs,
             "max_new_tokens": args.max_tokens,
+            "profile": config["profile"],
             "num_servers": config["num_servers"],
         },
         "results": results,
         "fault_events": [],  # No faults in baseline
     }
-    with open(args.output, "w") as f:
+    with open(output_path, "w") as f:
         json.dump(output_data, f, indent=2)
-    print(f"\nResults saved to {args.output}")
+    print(f"\nResults saved to {output_path}")
 
     print_summary(results)
 

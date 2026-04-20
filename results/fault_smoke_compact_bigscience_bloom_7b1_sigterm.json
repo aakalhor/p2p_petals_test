@@ -1,0 +1,62 @@
+{
+  "experiment": "fault_smoke",
+  "config": {
+    "preset": "bloom-7b1",
+    "model_name": "bigscience/bloom-7b1",
+    "profile": "compact",
+    "fault_method": "SIGTERM",
+    "fault_port": 31338,
+    "fault_range": [
+      15,
+      30
+    ],
+    "max_new_tokens": 8,
+    "timeout_sec": 90
+  },
+  "results": [
+    {
+      "phase": "before_fault",
+      "success": true,
+      "elapsed_sec": 4.32,
+      "tokens_generated": 8,
+      "output_text": "The future of robotics is here. The future of robotics is",
+      "route_line": null,
+      "error": null,
+      "returncode": 0,
+      "stdout": "[2026-04-19 23:55:50] Model: bigscience/bloom-7b1\n[2026-04-19 23:55:50] Initial peer: /ip4/172.16.144.2/tcp/31337/p2p/12D3KooWSyekxHMZAVCvvwcmnx15xmFkoQFQNUzUbjKcLPMnUvwZ\n[2026-04-19 23:55:50] Debug traces: test_client.trace.log\n[2026-04-19 23:55:50] Loading tokenizer...\n[2026-04-19 23:55:51] Connecting to swarm and loading distributed model...\n[2026-04-19 23:55:55] Distributed model is ready.\n[2026-04-19 23:55:55] Prompt: The future of robotics is\n[2026-04-19 23:55:55] Prompt tokens: 6\n[2026-04-19 23:55:55] Generating 8 tokens...\n[2026-04-19 23:55:59] Generation finished in 4.32s\n[2026-04-19 23:55:59] Generated tokens: 8\n[2026-04-19 23:55:59] Output: The future of robotics is here. The future of robotics is\n[2026-04-19 23:55:59] Smoke test passed.\n",
+      "stderr": "Apr 19 23:55:51.898 [INFO] Make sure you follow the BLOOM terms of use: https://bit.ly/bloom-license\nApr 19 23:55:51.899 [INFO] Using DHT prefix: bigscience/bloom-7b1-petals\n\nLoading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]\nLoading checkpoint shards:  50%|\u2588\u2588\u2588\u2588\u2588     | 1/2 [00:01<00:01,  1.15s/it]\nLoading checkpoint shards: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 2/2 [00:01<00:00,  1.62it/s]\n/workspace/p2p_inference/.venv-main/lib/python3.11/site-packages/transformers/models/bloom/modeling_bloom.py:838: FutureWarning: `position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore passing `position_ids`.\n  warnings.warn(\nApr 19 23:55:55.166 [INFO] Route found: 0:15 via \u2026MnUvwZ => 15:30 via \u2026G3ukQA\n"
+    },
+    {
+      "phase": "after_fault",
+      "success": false,
+      "elapsed_sec": 90,
+      "tokens_generated": 0,
+      "output_text": null,
+      "route_line": null,
+      "error": "subprocess timeout after 90s",
+      "returncode": null,
+      "stdout": "[2026-04-19 23:56:31] Model: bigscience/bloom-7b1\n[2026-04-19 23:56:31] Initial peer: /ip4/172.16.144.2/tcp/31337/p2p/12D3KooWSyekxHMZAVCvvwcmnx15xmFkoQFQNUzUbjKcLPMnUvwZ\n[2026-04-19 23:56:31] Debug traces: test_client.trace.log\n[2026-04-19 23:56:31] Loading tokenizer...\n[2026-04-19 23:56:32] Connecting to swarm and loading distributed model...\n[2026-04-19 23:56:35] Distributed model is ready.\n[2026-04-19 23:56:35] Prompt: When a peer disappears from a private swarm,\n[2026-04-19 23:56:35] Prompt tokens: 10\n[2026-04-19 23:56:35] Generating 8 tokens...\n",
+      "stderr": "Apr 19 23:56:32.565 [INFO] Make sure you follow the BLOOM terms of use: https://bit.ly/bloom-license\nApr 19 23:56:32.566 [INFO] Using DHT prefix: bigscience/bloom-7b1-petals\n\rLoading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]\rLoading checkpoint shards:  50%|\u2588\u2588\u2588\u2588\u2588     | 1/2 [00:01<00:01,  1.14s/it]\rLoading checkpoint shards: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 2/2 [00:01<00:00,  1.64it/s]\n/workspace/p2p_inference/.venv-main/lib/python3.11/site-packages/transformers/models/bloom/modeling_bloom.py:838: FutureWarning: `position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore passing `position_ids`.\n  warnings.warn(\nApr 19 23:56:35.737 [INFO] Route found: 0:15 via \u2026MnUvwZ => 15:30 via \u2026G3ukQA\n"
+    }
+  ],
+  "fault_events": [
+    {
+      "type": "SIGTERM",
+      "port": 31338,
+      "block_range": [
+        15,
+        30
+      ],
+      "matched_processes": [
+        {
+          "pid": 23128,
+          "cmdline": "<from swarm_config.json>"
+        }
+      ],
+      "killed_pids": [
+        23128
+      ],
+      "time": 1776643055.8918755
+    }
+  ]
+}

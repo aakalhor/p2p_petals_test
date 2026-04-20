@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Launch a private local Petals swarm for llama-7b on one machine.
+Launch a private local Petals swarm on one machine.
 
 Usage:
     python launch_swarm.py
-    python launch_swarm.py --profile compact
+    python launch_swarm.py --profile single
+    python launch_swarm.py --preset llama-7b-legacy --profile compact
 """
 
 import argparse
 import json
-import sys
 import time
 
+from model_presets import DEFAULT_MODEL_PRESET, MODEL_PRESETS, build_profile, resolve_model_config
 from swarm_manager import SwarmManager
 
 
-MODEL_NAME = "huggyllama/llama-7b"
 BASE_PORT = 31337
 SERVER_START_TIMEOUT = 180
 DEFAULT_SERVER_ARGS = [
@@ -31,22 +31,13 @@ DEFAULT_SERVER_ARGS = [
     "0.0",
 ]
 
-SWARM_PROFILES = {
-    "presentation": {
-        "description": "4 local peers, 8 blocks each",
-        "block_ranges": [(0, 8), (8, 16), (16, 24), (24, 32)],
-    },
-    "compact": {
-        "description": "2 local peers, lower process overhead",
-        "block_ranges": [(0, 16), (16, 32)],
-    },
-}
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Launch a private local Petals swarm")
-    parser.add_argument("--profile", choices=sorted(SWARM_PROFILES), default="presentation")
-    parser.add_argument("--model", default=MODEL_NAME)
+    parser.add_argument("--profile", choices=["single", "compact", "presentation"], default="single")
+    parser.add_argument("--preset", choices=sorted(MODEL_PRESETS), default=DEFAULT_MODEL_PRESET)
+    parser.add_argument("--model", help="Override the model name from the preset")
+    parser.add_argument("--total-blocks", type=int, help="Override the total block count from the preset")
     parser.add_argument("--base-port", type=int, default=BASE_PORT)
     parser.add_argument("--bind-host", default="127.0.0.1", help="Host used for listen multiaddrs")
     parser.add_argument("--announce-host", help="Host advertised to clients and peers; defaults to --bind-host")
@@ -62,24 +53,26 @@ def parse_args():
 
 def main():
     args = parse_args()
-    profile = SWARM_PROFILES[args.profile]
+    model_config = resolve_model_config(args.preset, model_name=args.model, total_blocks=args.total_blocks)
+    profile = build_profile(args.profile, model_config["total_blocks"])
     block_ranges = profile["block_ranges"]
-    num_servers = len(block_ranges)
     announce_host = args.announce_host or args.bind_host
     exit_code = 0
 
     print("=" * 60)
     print("  P2P Inference - Launching Private Swarm")
-    print(f"  Model: {args.model}")
-    print(f"  Profile: {args.profile} ({profile['description']})")
+    print(f"  Preset: {model_config['preset']} ({model_config['summary']})")
+    print(f"  Model: {model_config['model_name']}")
+    print(f"  Total blocks: {model_config['total_blocks']}")
+    print(f"  Profile: {profile['name']} ({profile['description']})")
     print(f"  Host: {args.bind_host}")
     print(f"  Announce host: {announce_host}")
-    print(f"  Servers: {num_servers}")
+    print(f"  Servers: {profile['num_servers']}")
     print(f"  Server args: {' '.join(DEFAULT_SERVER_ARGS + args.server_arg)}")
     print("=" * 60)
 
     manager = SwarmManager(
-        args.model,
+        model_config["model_name"],
         base_port=args.base_port,
         bind_host=args.bind_host,
         announce_host=announce_host,
@@ -90,7 +83,7 @@ def main():
         bootstrap_port = args.base_port
         bootstrap_start, bootstrap_end = block_ranges[0]
         print(
-            f"\n[1/{num_servers}] Starting bootstrap server on port {bootstrap_port} "
+            f"\n[1/{profile['num_servers']}] Starting bootstrap server on port {bootstrap_port} "
             f"(blocks {bootstrap_start}:{bootstrap_end})..."
         )
         manager.start_server(bootstrap_port, bootstrap_start, bootstrap_end, is_bootstrap=True)
@@ -100,7 +93,7 @@ def main():
         for index, (block_start, block_end) in enumerate(block_ranges[1:], start=1):
             port = args.base_port + index
             print(
-                f"\n[{index + 1}/{num_servers}] Starting server on port {port} "
+                f"\n[{index + 1}/{profile['num_servers']}] Starting server on port {port} "
                 f"(blocks {block_start}:{block_end})..."
             )
             manager.start_server(port, block_start, block_end, is_bootstrap=False)
@@ -108,7 +101,7 @@ def main():
 
         manager.status()
         alive = manager.get_alive_ports()
-        if len(alive) < num_servers:
+        if len(alive) < profile["num_servers"]:
             dead = manager.get_dead_ports()
             print(f"WARNING: {len(dead)} server(s) died during startup. Ports: {dead}")
             print("Check logs: server_<port>.log")
@@ -116,17 +109,30 @@ def main():
             print("All servers are running.")
 
         config = {
-            "model_name": args.model,
+            "preset": model_config["preset"],
+            "model_name": model_config["model_name"],
+            "model_summary": model_config["summary"],
+            "total_blocks": model_config["total_blocks"],
             "initial_peer": peer_addr,
             "initial_peers": [peer_addr],
             "base_port": args.base_port,
             "bind_host": args.bind_host,
             "announce_host": announce_host,
-            "profile": args.profile,
-            "num_servers": num_servers,
+            "profile": profile["name"],
+            "profile_description": profile["description"],
+            "num_servers": profile["num_servers"],
             "block_ranges": block_ranges,
-            "server_ports": [args.base_port + i for i in range(num_servers)],
+            "server_ports": [args.base_port + i for i in range(profile["num_servers"])],
             "server_args": DEFAULT_SERVER_ARGS + args.server_arg,
+            "server_processes": [
+                {
+                    "port": port,
+                    "pid": manager.servers[port]["process"].pid,
+                    "blocks": list(manager.servers[port]["blocks"]),
+                    "is_bootstrap": manager.servers[port]["is_bootstrap"],
+                }
+                for port in sorted(manager.servers)
+            ],
         }
         with open("swarm_config.json", "w") as handle:
             json.dump(config, handle, indent=2)
@@ -149,6 +155,7 @@ def main():
         exit_code = 1
     finally:
         manager.shutdown_all()
+
     raise SystemExit(exit_code)
 
 

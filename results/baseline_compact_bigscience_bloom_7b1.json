@@ -1,0 +1,54 @@
+{
+  "experiment": "baseline",
+  "config": {
+    "preset": "bloom-7b1",
+    "model_name": "bigscience/bloom-7b1",
+    "num_runs": 5,
+    "max_new_tokens": 12,
+    "profile": "compact",
+    "num_servers": 2
+  },
+  "results": [
+    {
+      "run": 0,
+      "prompt": "The future of robotics is",
+      "elapsed_sec": 11.137738157063723,
+      "tokens_generated": 12,
+      "tokens_per_sec": 1.0774180386337613,
+      "success": true
+    },
+    {
+      "run": 1,
+      "prompt": "In a distributed system, fault tolerance means",
+      "elapsed_sec": 8.597774772904813,
+      "tokens_generated": 12,
+      "tokens_per_sec": 1.3957099734476672,
+      "success": true
+    },
+    {
+      "run": 2,
+      "prompt": "Peer-to-peer networks differ from client-server because",
+      "elapsed_sec": 6.489710535854101,
+      "tokens_generated": 12,
+      "tokens_per_sec": 1.849080931068168,
+      "success": true
+    },
+    {
+      "run": 3,
+      "prompt": "Large language models require significant compute due to",
+      "elapsed_sec": 6.507262421771884,
+      "tokens_generated": 12,
+      "tokens_per_sec": 1.844093448552284,
+      "success": true
+    },
+    {
+      "run": 4,
+      "prompt": "The main challenge of edge inference is",
+      "elapsed_sec": 6.090053224004805,
+      "tokens_generated": 12,
+      "tokens_per_sec": 1.9704261290690046,
+      "success": true
+    }
+  ],
+  "fault_events": []
+}

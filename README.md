@@ -1,147 +1,139 @@
 # P2P Petals Test
 
-Private Petals swarm experiments for `huggyllama/llama-7b`, focused on launching multiple local Petals peers and measuring fault-tolerance behavior.
+Private Petals swarm experiments for presentation demos and small fault-tolerance runs.
 
 ## Current Status
 
-This repo is presentation-ready for:
+This repo now has a real end-to-end Petals demo path that was validated on a rented Linux GPU server:
 
-- private swarm startup on one machine
-- peer discovery and route construction
-- archived experiment results from prior runs
-- a clear discussion of the remaining runtime limitation
+- environment: Ubuntu on `1x A40 48 GB`
+- install path: current Petals from GitHub
+- known-good model: `bigscience/bloom-7b1`
+- successful profiles:
+  - `single`: one server serving all 30 blocks
+  - `compact`: two local peers serving `0:15` and `15:30`
 
-This repo is not currently validated for:
-
-- successful end-to-end token generation in the current Windows/WSL or rented A40 environments
-
-In both environments, the swarm starts correctly, the client connects, and Petals finds a valid route, but the first live inference span fails with `ConnectionResetError`, `BrokenPipeError`, or `TimeoutError`.
+Fresh successful artifacts are in [results/FRESH_RUNS.md](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/FRESH_RUNS.md), [results/baseline_compact_bigscience_bloom_7b1.json](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/baseline_compact_bigscience_bloom_7b1.json), and [results/fault_smoke_compact_bigscience_bloom_7b1_sigterm.json](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/fault_smoke_compact_bigscience_bloom_7b1_sigterm.json).
 
 ## What Was Fixed
 
-- Removed the invalid `num_blocks + block_indices` combination from server startup.
-- Fixed bootstrap peer extraction so the parsed multiaddr no longer includes a trailing quote.
-- Switched local swarm startup to explicit Petals multiaddrs via `--host_maddrs` and `--announce_maddrs`.
-- Added `--announce-host` support so peers can bind on one address and advertise another.
-- Changed swarm readiness checks to wait for Petals `Started`, not only `Announced that blocks`.
-- Added conservative local server defaults:
-  - `--num_handlers 1`
-  - `--prefetch_batches 1`
-  - `--sender_threads 1`
-  - `--attn_cache_tokens 4096`
-  - `--balance_quality 0.0`
-- Added client-side progress logging and periodic traceback dumps for stalled runs.
-- Added runtime environment defaults for Linux-side temp/cache directories.
+The original repo issues on the private-swarm/orchestration side are fixed:
 
-## Validated Outcome
+- removed the invalid `--num_blocks` + `--block_indices` combination
+- fixed bootstrap peer extraction
+- switched to explicit `--host_maddrs` and `--announce_maddrs`
+- added separate bind vs announce host support
+- wait for Petals `Started` before declaring a peer ready
+- added conservative server defaults for single-GPU demos
+- added `single` profile and model presets
+- added exact server PID capture in `swarm_config.json` for churn demos
 
-Validated in WSL and on a rented A40 pod:
+## Known-Good Demo Path
 
-- `launch_swarm.py` starts a private swarm successfully.
-- Non-bootstrap peers connect correctly.
-- `swarm_config.json` is generated correctly at runtime.
-- `test_client.py` loads the tokenizer and distributed model successfully.
-- Petals reports a full route across the configured block ranges.
+### Runtime
 
-Remaining issue:
+- Python `3.11`
+- `torch 2.5.1+cu121`
+- `petals 2.3.0.dev2`
+- `hivemind 1.2.0.dev0`
+- `transformers 4.43.1`
 
-- the first inference RPC fails during `model.generate(...)`
+### Working model/profile combination
 
-## Historical Results
+- default preset: `bloom-7b1`
+- default launch profile: `single`
+- reliable multi-peer demo: `compact`
 
-The following archived result files are present in `results/`:
+The legacy `huggyllama/llama-7b` path is still available as `--preset llama-7b-legacy`, but it is not the recommended presentation path.
 
-- `baseline_4srv.json`
-- `sigterm_4srv_60s.json`
-- `sigkill_4srv_60s.json`
-- `sigkill_4srv_30s.json`
-- `sigkill_6srv_60s.json`
-- `sigkill_6srv_repl.json`
+## Exact Setup Commands
 
-Missing from the original matrix:
-
-- `partition_4srv_60s.json`
-- `slow_4srv.json`
-
-Use these files as prior collected experiment results, not as fully revalidated outputs from the current environment.
-
-## Quick Start
-
-### WSL
-
-Run inside Ubuntu WSL:
+Run these on a clean Linux GPU server:
 
 ```bash
-cd /mnt/c/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference
-source /home/amirali/p2p_inference/.venv/bin/activate
-export HF_HUB_DISABLE_XET=1
-export TMPDIR=/tmp
-export HF_HOME=$HOME/.cache/huggingface
-python launch_swarm.py
-```
-
-In a second terminal:
-
-```bash
-cd /mnt/c/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference
-source /home/amirali/p2p_inference/.venv/bin/activate
-export HF_HUB_DISABLE_XET=1
-export TMPDIR=/tmp
-export HF_HOME=$HOME/.cache/huggingface
-python test_client.py
-```
-
-### Linux GPU Server
-
-For a rented Linux server:
-
-```bash
+cd /workspace
+git clone https://github.com/aakalhor/p2p_petals_test.git p2p_inference
 cd /workspace/p2p_inference
-. .venv/bin/activate
+python3 -m venv .venv-main
+. .venv-main/bin/activate
+pip install --upgrade pip "setuptools<81" wheel
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install cython pybind11 grpcio-tools protobuf pyyaml
+pip install --no-build-isolation git+https://github.com/bigscience-workshop/petals
+export PYTHONUNBUFFERED=1
 export HF_HUB_DISABLE_XET=1
 export TMPDIR=/tmp
 export HF_HOME=/root/.cache/huggingface
 export HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
-python launch_swarm.py --profile compact --bind-host 0.0.0.0 --announce-host <server-local-ip>
 ```
 
-Then:
+## Reproduce The Demo
+
+### 1. Single-peer smoke test
+
+Terminal 1:
 
 ```bash
-python test_client.py --max-new-tokens 16 --traceback-timeout 120
+cd /workspace/p2p_inference
+. .venv-main/bin/activate
+export PYTHONUNBUFFERED=1 HF_HUB_DISABLE_XET=1 TMPDIR=/tmp
+export HF_HOME=/root/.cache/huggingface
+export HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
+python launch_swarm.py --profile single --bind-host 0.0.0.0 --announce-host <server-ip>
 ```
 
-## Useful Commands
-
-Launch the default four-peer topology:
+Terminal 2:
 
 ```bash
-python launch_swarm.py
+cd /workspace/p2p_inference
+. .venv-main/bin/activate
+export PYTHONUNBUFFERED=1 HF_HUB_DISABLE_XET=1 TMPDIR=/tmp
+export HF_HOME=/root/.cache/huggingface
+export HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
+python -u test_client.py --max-new-tokens 16 --traceback-timeout 120
 ```
 
-Launch the lower-overhead two-peer topology:
+### 2. Two-peer smoke test
+
+Terminal 1:
 
 ```bash
-python launch_swarm.py --profile compact
+cd /workspace/p2p_inference
+. .venv-main/bin/activate
+export PYTHONUNBUFFERED=1 HF_HUB_DISABLE_XET=1 TMPDIR=/tmp
+export HF_HOME=/root/.cache/huggingface
+export HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
+python launch_swarm.py --profile compact --bind-host 0.0.0.0 --announce-host <server-ip>
 ```
 
-Try a different advertised address:
+Terminal 2:
 
 ```bash
-python launch_swarm.py --profile compact --bind-host 0.0.0.0 --announce-host 172.16.144.2
+cd /workspace/p2p_inference
+. .venv-main/bin/activate
+export PYTHONUNBUFFERED=1 HF_HUB_DISABLE_XET=1 TMPDIR=/tmp
+export HF_HOME=/root/.cache/huggingface
+export HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
+python -u test_client.py --max-new-tokens 16 --traceback-timeout 120
+python -u run_baseline.py --num_runs 5 --max_tokens 12
+python -u run_fault_smoke.py --max-new-tokens 8 --timeout 90 --fault-method SIGTERM
 ```
 
-Run baseline experiments against an already running swarm:
+## Fresh Results In This Repo
 
-```bash
-python run_baseline.py --num_runs 10 --max_tokens 20
-```
+- [results/FRESH_RUNS.md](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/FRESH_RUNS.md): exact commands and log excerpts
+- [results/baseline_compact_bigscience_bloom_7b1.json](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/baseline_compact_bigscience_bloom_7b1.json): fresh compact baseline
+- [results/fault_smoke_compact_bigscience_bloom_7b1_sigterm.json](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/fault_smoke_compact_bigscience_bloom_7b1_sigterm.json): small churn run
 
-## Recommended Presentation Framing
+Historical archived outputs from the original repo are still present in `results/`, but the presentation should prioritize the fresh BLOOM/A40 artifacts above.
 
-- We fixed private swarm startup and peer discovery.
-- We verified route construction across multiple Petals peers on one machine.
-- We recovered historical experiment outputs from earlier runs.
-- Live end-to-end inference is still blocked by a Petals runtime failure on the first remote span.
+## Presentation-Safe Claim
 
-For a slide-ready summary, see [PRESENTATION_README.md](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/PRESENTATION_README.md).
+We repaired the private-swarm orchestration, switched to a current Petals environment and a more reproducible model, and validated a real end-to-end Petals demo:
+
+- successful single-server generation
+- successful two-peer generation with a real multi-hop route
+- fresh baseline output
+- fresh small churn output with a verified peer kill
+
+For the slide outline and framing, see [PRESENTATION_README.md](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/PRESENTATION_README.md).

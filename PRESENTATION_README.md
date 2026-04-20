@@ -2,119 +2,111 @@
 
 ## One-Slide Summary
 
-We adapted a Petals-based private swarm repo so it can reliably launch multiple local peers on one machine, fixed bootstrap discovery and localhost-safe addressing, and verified that the client can connect and build full routes across the swarm. Archived experiment outputs exist for baseline and churn scenarios. The remaining open issue is that live generation fails on the first remote inference span in the currently tested environments.
+We recovered the private-swarm orchestration, moved the demo to a current Petals stack on Linux, switched from the fragile legacy `llama-7b` path to `bigscience/bloom-7b1`, and produced fresh end-to-end results:
+
+- single-peer generation succeeded
+- two-peer generation succeeded with a real route across both peers
+- a fresh 5-run baseline succeeded
+- a small churn demo succeeded in killing one peer and recording the degraded outcome
 
 ## Project Goal
 
-The repo is intended to launch multiple local Petals servers for `huggyllama/llama-7b`, then evaluate baseline performance and fault behavior under server churn.
+Show a real Petals private swarm running an LLM in a P2P layout, then present one baseline result and one small failure result.
 
 ## What Was Broken Originally
 
-- `swarm_manager.py` passed both `--num_blocks` and `--block_indices`, which Petals rejects.
-- Bootstrap peer parsing could capture a trailing quote from the logged multiaddr.
-- Local peer startup logic was brittle for one-machine localhost/private use.
+- invalid Petals CLI combination in swarm startup
+- brittle bootstrap peer extraction
+- localhost/private-address startup issues
+- legacy `huggyllama/llama-7b` path failing on the first remote inference hop
 
-## What Was Fixed
+## What We Changed
 
-### Startup and addressing
+### Swarm orchestration
 
-- Removed the conflicting Petals CLI arguments.
-- Switched to explicit Petals multiaddrs with `--host_maddrs` and `--announce_maddrs`.
-- Added support for separate bind and announce hosts.
-- Fixed bootstrap peer extraction.
+- fixed Petals CLI arguments
+- switched to explicit multiaddrs via `--host_maddrs` and `--announce_maddrs`
+- added bind-host vs announce-host support
+- wait for `Started` before marking peers ready
+- added `single`, `compact`, and `presentation` profiles
 
-### Readiness and debugging
+### Known-good demo path
 
-- Changed startup checks to wait for Petals `Started`.
-- Added conservative local server defaults to reduce process overhead.
-- Added client-side logging and faulthandler traces so stalls are diagnosable.
-- Added Linux-side temp/cache defaults for WSL and Linux GPU servers.
+- added model presets
+- made `bigscience/bloom-7b1` the default demo preset
+- made `single` the default launch profile
+- saved exact server PIDs into `swarm_config.json` for fault demos
 
-## What We Successfully Validated
+### Diagnostics and experiments
 
-### On Windows laptop with WSL
+- `test_client.py` now logs readiness, token generation, and tracebacks
+- `run_baseline.py` writes model/profile-specific outputs
+- `run_fault_smoke.py` wraps the smoke client and records a real peer kill
 
-- Four-peer swarm startup works.
-- Bootstrap and non-bootstrap peer connection works.
-- `swarm_config.json` is generated correctly.
-- The client loads the distributed model and discovers a full route.
+## Validated Environment
 
-### On rented A40 GPU server
+- Ubuntu Linux on rented server
+- `1x A40 48 GB`
+- Python `3.11`
+- `torch 2.5.1+cu121`
+- `petals 2.3.0.dev2`
+- `transformers 4.43.1`
 
-- Clean environment build succeeded.
-- Two-peer and four-peer private swarms both start successfully.
-- The client loads the distributed model successfully.
-- Route construction works with both localhost and real pod IP advertisement.
+## Fresh Results You Can Show
 
-## Remaining Limitation
+### Single-peer smoke test
 
-The first live inference span fails with:
+- model ready
+- route found across `0:30`
+- successful generation of 16 new tokens
 
-- `ConnectionResetError`
-- `BrokenPipeError`
-- `TimeoutError`
+### Two-peer smoke test
 
-This happens after:
+- model ready
+- route found across `0:15 => 15:30`
+- successful generation of 16 new tokens
 
-- swarm formation
-- client connection
-- model loading
-- route discovery
+### Baseline
 
-So the remaining issue is not peer discovery or startup orchestration. It is a Petals runtime failure during the first remote inference step.
+- `5/5` successful requests
+- saved in [results/baseline_compact_bigscience_bloom_7b1.json](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/baseline_compact_bigscience_bloom_7b1.json)
 
-## What Results We Have
+### Churn demo
 
-Archived JSON result files:
+- `SIGTERM` sent to the non-bootstrap peer
+- exact killed PID recorded
+- saved in [results/fault_smoke_compact_bigscience_bloom_7b1_sigterm.json](C:/Users/amirali/Desktop/Adv_Dist/P2P/p2p_inference/results/fault_smoke_compact_bigscience_bloom_7b1_sigterm.json)
 
-- `results/baseline_4srv.json`
-- `results/sigterm_4srv_60s.json`
-- `results/sigkill_4srv_60s.json`
-- `results/sigkill_4srv_30s.json`
-- `results/sigkill_6srv_60s.json`
-- `results/sigkill_6srv_repl.json`
-
-These are presentation-usable as historical collected outputs.
-
-## What Results We Do Not Have
-
-- no successful fresh end-to-end generation result from the current validated environments
-- missing experiment files for:
-  - `partition_4srv_60s`
-  - `slow_4srv`
-
-## Honest Presentation Conclusion
-
-The engineering recovery was successful for swarm startup, peer discovery, and route formation. The repo is now much more robust and reproducible for the orchestration part of the project. However, full end-to-end generation is still blocked by a Petals inference runtime failure in the tested environments, so the experiment matrix is only partially reproducible today.
-
-## Suggested Slide Outline
+## Slide Outline
 
 1. Problem
-   Run a private Petals swarm for `llama-7b` and test P2P inference under failures.
+   Private Petals swarm demo for P2P LLM inference and fault behavior.
 
 2. Initial blockers
-   Bad Petals CLI arguments, broken bootstrap parsing, localhost swarm startup issues.
+   Bad CLI arguments, bad peer parsing, legacy model/runtime path failing.
 
 3. Fixes
-   Correct Petals startup arguments, localhost-safe multiaddrs, stronger readiness checks, better diagnostics.
+   Correct swarm startup, private addressing, profiles, diagnostics, and new demo model preset.
 
-4. Validated achievements
-   Local multi-peer swarm startup works on WSL and on a rented A40 server.
+4. Environment
+   A40 server, latest Petals from GitHub, BLOOM-7.1B.
 
-5. Evidence
-   Show `launch_swarm.py` output, route-found client logs, and archived JSON results.
+5. Fresh evidence
+   Show single-peer smoke log, two-peer route log, baseline JSON summary, and churn JSON summary.
 
-6. Remaining issue
-   Generation fails on first remote inference span with connection resets/timeouts.
+6. Final claim
+   We achieved a real end-to-end Petals private-swarm demo and captured fresh presentation-safe outputs.
 
-7. Takeaway
-   Swarm orchestration is repaired; runtime inference remains the open systems issue.
+## Suggested Live Demo
 
-## Suggested Demo Plan
+If you only have time for one live demo in class:
 
-- Show `python launch_swarm.py` starting the private swarm.
-- Show the client reaching `Distributed model is ready`.
-- Show the `Route found: ...` log line.
-- Then explain that the remaining failure is at the first live inference RPC.
+1. run `python launch_swarm.py --profile compact --bind-host 0.0.0.0 --announce-host <server-ip>`
+2. run `python -u test_client.py --max-new-tokens 16 --traceback-timeout 120`
+3. point to the `Route found: 0:15 ... => 15:30 ...` line
+4. show the generated text
+5. use the saved baseline and churn JSON files on the next slide
 
-That is still a defensible systems presentation because it distinguishes orchestration success from serving-runtime failure.
+## Important Framing
+
+The original `huggyllama/llama-7b` private-swarm path is still useful as a debugging story, but it is not the presentation demo path anymore. The presentation should focus on the validated current-stack BLOOM path.
